@@ -5,6 +5,8 @@
 [image1]: ./test_images_output/solidWhiteRight.jpg "Grayscale"
 
 ---
+## Installation
+Run `bash run.sh` and follow instructions on terminal to get to Jupyter Notebook.
 
 ## Reflection
 The pipeline consisted of the following steps:
@@ -29,18 +31,24 @@ if y2>y1:
 ![alt text][image1]
 
 ### Extensions
-There were two important modifications that were done in this project.
+There were three important modifications that were done in this project.
 1. It is safe to assume that the lane lines that are closest to the car would have an angle that is greater than 30 degrees to the horizon. Hence, after the endpoints of the edge was extracted, all lines that are shallower than this angle were discarded.
-2. There were a lot of spurious edges initially that tended to start outside the region of interest. This was due to the fact that the `region_of_interest` function discarded edges that were outside the triangular region, while only _truncating_ an edge if it was partially outside the ROI. We extended this by discarding all but the edges that were completely contained within the ROI.
+2. There were a lot of spurious edges initially that tended to start outside the region of interest. This was due to the fact that the `region_of_interest` function discarded edges that were outside the triangular region, while only _truncating_ an edge if it was partially outside the ROI. We extended this by discarding all but the edges that were completely contained within the ROI (i.e. the endpoints were within the ROI).
+3. The x coordinate of the line extended to the bottom as well as its gradients were clustered using Kmeans (for 2 clusters). The cluster centers were taken to indicate the starting x coordinate and the gradient of the two lane lines. If the Kmean centers were less than 100 pixels apart, those lines were averaged to create 1 cluster instead.
+4. With videos however, there were occasions when the second lane marking was missing. In these occasions the previous known x coordinate and gradient was used. Furthermore, to reduce sudden fluctuations of lane lines, we employed exponential smoothing of the cluster centers, such that: `new_center = 0.9 x current_center + 0.1 x previous_center`. The following code snippet portrays this concept.
+```
+    if len(c_hist)>1: #If its not the first frame
+        if clusters.shape[0]==2:
+            clusters = 0.9*clusters +0.1*c_hist[-1]
+        elif len(clusters)==0:
+            clusters = c_hist[-1]
+```
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/qQXPWDmRZuk" frameborder="0" allowfullscreen></iframe>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/IqnMC2vrkQs" frameborder="0" allowfullscreen></iframe>
 
 ## Shortcomings
 
-Currently it is quite vulnerable to light conditions. This can be seen in the optional video where the left lane line disappears for the yellow line on a bright section of the road.
+Currently it is quite vulnerable to light conditions. This can be seen in the optional video where the left lane line can be spurious since it depends on previous frames.
 
 ## Futurework and Improvements
-
-An immediate improvement that could be made is to use time information. Currently the fact that lane makings persist over concurrent image frames are not used in the algorithm.
-
 The parameters were hand tuned to the images that were shown here. It is questionable if it would perform in a unseen test set. Hence it would be useful to use Deep Learning to find the lanes themselves.
